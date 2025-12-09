@@ -1,25 +1,42 @@
-from flask_cors import CORS
+# app.py
+
 from flask import Flask
-from database.models import db
-import config
+from flask_cors import CORS
+from config import Config
+from database.db import init_db
 
+# Import blueprints
 from routes.auth_routes import auth_bp
-from routes.expense_routes import expense_bp
+from routes.user_routes import user_bp  # Only if you have this file
 
-app = Flask(__name__)
-CORS(app)
+def create_app():
+    app = Flask(__name__)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = config.DATABASE_URI
-app.config["SECRET_KEY"] = config.SECRET_KEY
+    # Load configuration
+    app.config.from_object(Config)
 
-db.init_app(app)
+    # Enable CORS
+    CORS(app)
 
-# Register routes
-app.register_blueprint(auth_bp)
-app.register_blueprint(expense_bp)
+    # Initialize database
+    init_db(app)
+
+    # Register blueprints
+    app.register_blueprint(auth_bp, url_prefix="/auth")
+    
+    # Register only if file exists
+    try:
+        app.register_blueprint(user_bp, url_prefix="/user")
+    except:
+        pass
+
+    @app.route("/")
+    def home():
+        return {"message": "Backend is running!"}
+
+    return app
+
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
-    if __name__ == "__main__":
-     app.run(host="0.0.0.0")
+    app = create_app()
+    app.run(host="0.0.0.0", port=5000)

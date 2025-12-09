@@ -1,38 +1,73 @@
 from flask import Blueprint, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
 from database.models import User, db
-from passlib.hash import pbkdf2_sha256
-import jwt, datetime
-import config
+import jwt
+import datetime
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint("auth", __name__)
 
-@auth_bp.route('/signup', methods=['POST'])
-def signup():
+# IMPORTANT — use the SAME SECRET KEY you used in auth_middleware
+SECRET_KEY = "your_secret_key_here"  
+
+
+# ----------------------------- REGISTER ---------------------------------- #
+@auth_bp.route("/register", methods=["POST"])
+def register():
     data = request.json
 
-    if User.query.filter_by(username=data['username']).first():
-        return jsonify({"message": "Username already exists"}), 400
-        
-    hashed_password = pbkdf2_sha256.hash(data['password'])
-    user = User(username=data['username'], password=hashed_password)
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
 
+    if not name or not email or not password:
+        return jsonify({"message": "All fields are required"}), 400
+
+    # Check user already exists
+    existing = User.query.filter_by(email=email).first()
+    if existing:
+        return jsonify({"message": "Email already registered"}), 400
+
+    # Hash password securely
+    hashed_password = generate_password_hash(password)
+
+    # Save user
+    user = User(name=name, email=email, password=hashed_password)
     db.session.add(user)
     db.session.commit()
 
-    return jsonify({"message": "User created successfully"})
+    return jsonify({"message": "User registered successfully"}), 200
 
 
-@auth_bp.route('/login', methods=['POST'])
+
+# ----------------------------- LOGIN ------------------------------------- #
+@auth_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
-    user = User.query.filter_by(username=data['username']).first()
 
-    if not user or not pbkdf2_sha256.verify(data['password'], user.password):
-        return jsonify({"message": "Invalid username or password"}), 401
+    email = data.get("email")
+    password = data.get("password")
 
-    token = jwt.encode({
-        "user_id": user.id,
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=8)
-    }, config.SECRET_KEY, algorithm="HS256")
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400
 
-    return jsonify({"token": token})
+    # Find user
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify({"message": "Invalid email or password"}), 401
+
+    # Check password hash
+    if not check_password_hash(user.password, password):
+        return jsonify({"message": "Invalid email or password"}), 401
+
+    # Create JWT token valid for 24 hours
+    token = jwt.encode(
+        {
+            "user_id": user.id,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+        },
+        SECRET_KEY,
+        algorithm="HS256",
+    )
+
+    return jsonify({"token": token}), 200

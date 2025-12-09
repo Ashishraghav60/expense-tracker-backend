@@ -1,5 +1,7 @@
 flask
-flask_sqlalchemy
-flask_cors
+flask-cors
+flask-pymongo
+pymongo
+passlib
 python-dotenv
-pyjwt
+gunicorn
