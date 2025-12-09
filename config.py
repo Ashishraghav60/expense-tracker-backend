@@ -1,12 +1,16 @@
-# config.py
-
 import os
 from dotenv import load_dotenv
 
-# Load variables from .env file
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
-    MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/mydatabase")
-    DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+    SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key")
+
+    # Render PostgreSQL URL
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+
+    # If Render gives database url starting with postgres://
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
