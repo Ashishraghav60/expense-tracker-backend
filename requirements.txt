@@ -4,3 +4,5 @@ flask-sqlalchemy
 passlib
 pyjwt
 gunicorn
+python-dotenv
+psycopg2-binary
