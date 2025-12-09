@@ -1,7 +1,6 @@
 flask
 flask-cors
-flask-pymongo
-pymongo
+flask-sqlalchemy
 passlib
-python-dotenv
+pyjwt
 gunicorn
