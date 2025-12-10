@@ -1,17 +1,18 @@
 import os
 from dotenv import load_dotenv
 
-# Load .env file (works locally, Render ignores this but keeps variables from Dashboard)
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key")
+    SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-secret-key")
 
-    # Read database URL from Render or .env
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    db_url = os.environ.get("DATABASE_URL")
 
-    # Render sometimes sends URL starting with "postgres://"
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+    # Fix for Render postgres:// → postgresql://
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
 
+    SQLALCHEMY_DATABASE_URI = db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "*")
